@@ -1,7 +1,7 @@
 import logo from './logo.svg';
 import './App.css';
 // import { ImageUpload } from "./home";
-import { ImageUpload } from "./axiospractice";
+import { ImageUpload } from "./imageupload";
 
 function App() {
   return (
