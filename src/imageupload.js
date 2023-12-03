@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import React from "react";
-import {useDropzone} from 'react-dropzone';
+import { useDropzone } from "react-dropzone";
 import axios from "axios";
-
+import { Unstable_NumberInput as NumberInput } from "@mui/base/Unstable_NumberInput";
 
 export const ImageUpload = () => {
   const [selectedFile, setSelectedFile] = useState();
@@ -10,6 +10,13 @@ export const ImageUpload = () => {
   const [data, setData] = useState();
   const [image, setImage] = useState(false);
   const [isLoading, setIsloading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [endX, setEndX] = useState(0);
+  const [endY, setEndY] = useState(0);
+  const [threshold, setThreshold] = useState(10);
+
   let confidence = 0;
 
   const {
@@ -18,74 +25,44 @@ export const ImageUpload = () => {
     getInputProps,
     isDragActive,
     isDragAccept,
-    isDragReject
+    isDragReject,
   } = useDropzone({
-    maxFiles: 2,
+    maxFiles: 1,
     accept: {
-      'image/*': ['.jpeg', '.png']
-    }
+      "image/*": [".jpeg"],
+    },
   });
 
-
   const sendFile = async () => {
+    console.log(startX + startY + endX + endY);
     if (image) {
       let formData = new FormData();
       formData.append("file", selectedFile);
+      formData.append("startX", startX);
+      formData.append("startY", startY);
+      formData.append("endX", endX);
+      formData.append("endY", endY);
+      formData.append("threshold", threshold);
       let res = await axios({
         method: "post",
         url: "http://127.0.0.1:5000/predict",
         data: formData,
+        responseType: "blob",
       });
-      console.log(res.status);
-      if (res.status === 200) {
-        console.log(res.data);
-        setData(res.data);
-      }
+
+      var url = URL.createObjectURL(res.data);
+      setResult(url);
+
       setIsloading(false);
     }
-  }
-
-  const getDummyPredict = () => {
-    console.log("in method")
-    axios({
-        method: "GET",
-        url:"http://127.0.0.1:5000/dummypredict",
-      })
-      .then((response) => {
-        const res =response.data
-        console.log(res)
-        setData(res)
-      }).catch((error) => {
-        if (error.response) {
-          console.log(error.response)
-          console.log(error.response.status)
-        //   console.log(error.response.headers)
-          }
-      })}
-
-      const getPredict = () => {
-        console.log("in method")
-        axios({
-            method: "GET",
-            url:"http://127.0.0.1:5000/dummypredict",
-          })
-          .then((response) => {
-            const res =response.data
-            console.log(res)
-            setData(res)
-          }).catch((error) => {
-            if (error.response) {
-              console.log(error.response)
-              console.log(error.response.status)
-            //   console.log(error.response.headers)
-              }
-          })}
+  };
 
   const clearData = () => {
     setData(null);
     setImage(false);
     setSelectedFile(null);
     setPreview(null);
+    setResult(null);
   };
 
   useEffect(() => {
@@ -107,44 +84,107 @@ export const ImageUpload = () => {
 
   useEffect(() => {
     if (!acceptedFiles || acceptedFiles.length === 0) {
-        setSelectedFile(undefined);
-        setImage(false);
-        setData(undefined);
-        return;
+      setSelectedFile(undefined);
+      setImage(false);
+      setData(undefined);
+      return;
     }
     setSelectedFile(acceptedFiles[0]);
     setData(undefined);
     setImage(true);
   }, [acceptedFiles]);
 
-//   const onSelectFile = (files) => {
-//     if (!files || files.length === 0) {
-//       setSelectedFile(undefined);
-//       setImage(false);
-//       setData(undefined);
-//       return;
-//     }
-//     setSelectedFile(files[0]);
-//     setData(undefined);
-//     setImage(true);
-//   };
-
-//   if (data) {
-//     confidence = (parseFloat(data.confidence)).toFixed(2);
-//   }
-
   return (
-    <div>
-        <div {...getRootProps({ className: 'dropzone' })}>
+    <div style={{ margin: "auto", width: "50%", justifyItems: "center" }}>
+      <div
+        style={{
+          margin: "auto",
+          width: "100%",
+          color: "red",
+        }}
+        {...getRootProps({ className: "dropzone" })}
+      >
         <input {...getInputProps()} />
-        <p>Drag 'n' drop some files here, or click to select files</p>
-        <em>(Only *.jpeg and *.png images will be accepted)</em>
+        <p style={{ textAlign: "center" }}>
+          Drop satellite image here, or click to select file
+        </p>
+        <p style={{ textAlign: "center" }}>
+          (Only *.jpeg images will be accepted)
+        </p>
       </div>
-        <button onClick={getDummyPredict}>Dummy Test</button>
-        {data && <>
-        <p>{data.class + " " + data.confidence}</p>
-        <button onClick={clearData}>Clear</button>
-        </>}
+
+      <div style={{ margin: "auto", width: "100%" }}>
+        <div>
+          <p>Start X:</p>
+          <NumberInput
+            aria-label="Demo number input"
+            placeholder="Type a number…"
+            value={startX}
+            onChange={(event, val) => setStartX(val)}
+            min={0}
+            max={255}
+          />
+        </div>
+
+        <div>
+          <p>Start Y:</p>
+          <NumberInput
+            aria-label="Demo number input"
+            placeholder="Type a number…"
+            value={startY}
+            onChange={(event, val) => setStartY(val)}
+            min={0}
+            max={255}
+          />
+        </div>
+
+        <div>
+          <p>End X:</p>
+          <NumberInput
+            aria-label="Demo number input"
+            placeholder="Type a number…"
+            value={endX}
+            onChange={(event, val) => setEndX(val)}
+            min={0}
+            max={255}
+          />
+        </div>
+
+        <div>
+          <p>End Y:</p>
+          <NumberInput
+            aria-label="Demo number input"
+            placeholder="Type a number…"
+            value={endY}
+            onChange={(event, val) => setEndY(val)}
+            min={0}
+            max={255}
+          />
+        </div>
+
+        <div>
+          <p>
+            Threshold: Default is 10, set to lower value if roads aren't fully
+            detected (or vice versa)
+          </p>
+          <NumberInput
+            aria-label="Demo number input"
+            placeholder="Type a number…"
+            value={threshold}
+            onChange={(event, val) => setThreshold(val)}
+            min={0}
+            max={255}
+          />
+        </div>
+      </div>
+
+      <button onClick={clearData}>Clear</button>
+      <div style={{ margin: "auto", width: "100%" }}>
+        <p style={{ textAlign: "center" }}>Result:</p>
+        {result && (
+          <img src={result} style={{ margin: "auto", display: "block" }} />
+        )}
+      </div>
     </div>
   );
 };
